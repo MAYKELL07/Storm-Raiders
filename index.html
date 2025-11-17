@@ -12,10 +12,15 @@
         <span id="notificationMessage"></span>
     </div>
 
+    <!-- Sound Toggle -->
+    <button id="soundToggle" class="sound-toggle" onclick="toggleSound()">
+        🔊
+    </button>
+
     <!-- Main Menu -->
     <div id="mainMenu" class="screen active">
-        <div class="menu-container">
-            <h1 class="game-title">⚓ Raiders on Deck ⚓</h1>
+        <div class="menu-container animate-fade-in">
+            <h1 class="game-title animate-title">⚓ Raiders on Deck ⚓</h1>
             <p class="game-subtitle">High Seas Strategy & Combat</p>
             <div class="menu-buttons">
                 <button class="btn btn-primary" onclick="showScreen('createRoomScreen')">Create Room</button>
@@ -27,7 +32,7 @@
 
     <!-- Create Room Screen -->
     <div id="createRoomScreen" class="screen">
-        <div class="menu-container">
+        <div class="menu-container animate-fade-in">
             <h2>Create New Room</h2>
             <div class="form-group">
                 <label>Your Captain Name:</label>
@@ -219,6 +224,8 @@
     </div>
 
     <script src="gameData.js"></script>
+    <script src="sounds.js"></script>
+    <script src="vfx.js"></script>
     <script src="multiplayer.js"></script>
     <script src="gameEngine.js"></script>
     <script src="ui.js"></script>

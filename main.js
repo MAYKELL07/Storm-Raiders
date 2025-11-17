@@ -347,6 +347,30 @@ function performPlayerAction(action, target = null) {
         return;
     }
 
+    // Play sound and VFX
+    if (uiManager) {
+        uiManager.playActionSound(action);
+        
+        if (action === 'fire' && target) {
+            const targetElement = document.querySelector(`[data-player-id="${target}"]`);
+            uiManager.playActionVFX('fire', targetElement);
+            setTimeout(() => {
+                if (result.success && result.damage) {
+                    uiManager.playActionVFX('damage', targetElement, result.damage);
+                }
+            }, 300);
+        } else if (action === 'repair') {
+            const playerElement = document.querySelector(`[data-player-id="${currentPlayerId}"]`);
+            uiManager.playActionVFX('repair', playerElement, result.healed || 5);
+        } else if (action === 'plunder') {
+            const playerElement = document.querySelector(`[data-player-id="${currentPlayerId}"]`);
+            uiManager.playActionVFX('plunder', playerElement, 5);
+        } else if (action === 'maneuver') {
+            const playerElement = document.querySelector(`[data-player-id="${currentPlayerId}"]`);
+            uiManager.playActionVFX('maneuver', playerElement);
+        }
+    }
+
     // Animate effects
     if (action === 'fire' && target) {
         uiManager.animateDamage(target);

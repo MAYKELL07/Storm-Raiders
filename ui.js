@@ -324,6 +324,9 @@ class UIManager {
         const die1Element = document.getElementById('die1');
         const die2Element = document.getElementById('die2');
         
+        // Play dice sound
+        this.playActionSound('dice');
+        
         die1Element.classList.add('rolling');
         die2Element.classList.add('rolling');
 
@@ -375,6 +378,9 @@ class UIManager {
     showVictory(winner) {
         const message = document.getElementById('victoryMessage');
         
+        // Play victory sound and effects
+        this.playActionSound('victory');
+        
         if (winner.type === 'lastStanding') {
             message.textContent = `${winner.player.name} is the last ship standing!`;
         } else if (winner.type === 'mapFragments') {
@@ -386,6 +392,25 @@ class UIManager {
         }
 
         this.showModal('victoryModal');
+        
+        // Create victory confetti effect
+        if (typeof vfxManager !== 'undefined') {
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    vfxManager.createParticle({
+                        x: Math.random() * window.innerWidth,
+                        y: -20,
+                        color: ['#FFD700', '#FFA500', '#FF6347', '#4169E1'][Math.floor(Math.random() * 4)],
+                        size: 8 + Math.random() * 12,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: Math.random() * 3 + 2,
+                        gravity: 0.3,
+                        life: 3000 + Math.random() * 2000,
+                        glow: true
+                    });
+                }, i * 50);
+            }
+        }
     }
 
     onCardClick(card) {
@@ -422,6 +447,77 @@ class UIManager {
             setTimeout(() => element.classList.remove('heal-animation'), 1000);
         }
     }
+
+    // Sound and VFX integration
+    playActionSound(action) {
+        if (typeof soundManager === 'undefined') return;
+        
+        switch(action) {
+            case 'fire':
+                soundManager.play('cannon');
+                break;
+            case 'repair':
+                soundManager.play('repair');
+                break;
+            case 'plunder':
+                soundManager.play('card');
+                soundManager.play('coins', 0.7);
+                break;
+            case 'reload':
+                soundManager.play('reload');
+                break;
+            case 'maneuver':
+                soundManager.play('maneuver');
+                break;
+            case 'damage':
+                soundManager.play('damage');
+                break;
+            case 'dice':
+                soundManager.play('dice');
+                break;
+            case 'victory':
+                soundManager.play('victory');
+                soundManager.play('bell', 0.5);
+                break;
+        }
+    }
+
+    playActionVFX(action, targetElement, value = 0) {
+        if (typeof vfxManager === 'undefined') return;
+        
+        switch(action) {
+            case 'fire':
+                vfxManager.cannonBlast(targetElement);
+                vfxManager.screenShake(8, 200);
+                break;
+            case 'damage':
+                vfxManager.damageImpact(targetElement, value);
+                vfxManager.screenShake(5, 150);
+                if (targetElement) {
+                    targetElement.classList.add('damage-flash');
+                    setTimeout(() => targetElement.classList.remove('damage-flash'), 300);
+                }
+                break;
+            case 'repair':
+                vfxManager.healEffect(targetElement, value);
+                break;
+            case 'plunder':
+                vfxManager.coinEffect(targetElement, value);
+                break;
+            case 'maneuver':
+                vfxManager.splashEffect(targetElement);
+                break;
+            case 'fire-burn':
+                vfxManager.fireEffect(targetElement);
+                break;
+            case 'explosion':
+                soundManager.play('explosion');
+                vfxManager.cannonBlast(targetElement);
+                vfxManager.damageImpact(targetElement, value);
+                vfxManager.screenShake(12, 300);
+                break;
+        }
+    }
 }
 
 // Global UI helper functions for HTML onclick handlers
@@ -446,5 +542,16 @@ function closeModal() {
 function rollDice() {
     if (window.uiManager) {
         window.uiManager.rollDice();
+    }
+}
+
+function toggleSound() {
+    if (typeof soundManager !== 'undefined') {
+        const enabled = soundManager.toggle();
+        const btn = document.getElementById('soundToggle');
+        if (btn) {
+            btn.classList.toggle('muted', !enabled);
+            btn.textContent = enabled ? '🔊' : '';
+        }
     }
 }
