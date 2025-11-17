@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raiders on Deck - Pirate Battle Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="notification-toast">
+        <span id="notificationMessage"></span>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="mainMenu" class="screen active">
+        <div class="menu-container">
+            <h1 class="game-title">⚓ Raiders on Deck ⚓</h1>
+            <p class="game-subtitle">High Seas Strategy & Combat</p>
+            <div class="menu-buttons">
+                <button class="btn btn-primary" onclick="showScreen('createRoomScreen')">Create Room</button>
+                <button class="btn btn-primary" onclick="showScreen('joinRoomScreen')">Join Room</button>
+                <button class="btn btn-secondary" onclick="showScreen('wikiScreen')">Game Wiki</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Room Screen -->
+    <div id="createRoomScreen" class="screen">
+        <div class="menu-container">
+            <h2>Create New Room</h2>
+            <div class="form-group">
+                <label>Your Captain Name:</label>
+                <input type="text" id="createPlayerName" placeholder="Enter your name" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label>Number of Players:</label>
+                <select id="maxPlayers">
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4" selected>4 Players</option>
+                    <option value="5">5 Players</option>
+                    <option value="6">6 Players</option>
+                </select>
+            </div>
+            <div class="menu-buttons">
+                <button class="btn btn-primary" onclick="createRoom()">Create Room</button>
+                <button class="btn btn-secondary" onclick="showScreen('mainMenu')">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Join Room Screen -->
+    <div id="joinRoomScreen" class="screen">
+        <div class="menu-container">
+            <h2>Join Room</h2>
+            <div class="form-group">
+                <label>Your Captain Name:</label>
+                <input type="text" id="joinPlayerName" placeholder="Enter your name" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label>Room Code:</label>
+                <input type="text" id="roomCode" placeholder="Enter room code" maxlength="6">
+            </div>
+            <div class="menu-buttons">
+                <button class="btn btn-primary" onclick="joinRoom()">Join Room</button>
+                <button class="btn btn-secondary" onclick="showScreen('mainMenu')">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="screen">
+        <div class="lobby-container">
+            <h2>Room Lobby</h2>
+            <div class="room-info">
+                <p>Room Code: <span id="lobbyRoomCode" class="room-code">------</span></p>
+                <p>Players: <span id="lobbyPlayerCount">0/4</span></p>
+            </div>
+            <div id="playerList" class="player-list"></div>
+            <div class="menu-buttons">
+                <button class="btn btn-primary" id="startGameBtn" onclick="startGame()" style="display:none;">Start Game</button>
+                <button class="btn btn-secondary" onclick="leaveRoom()">Leave Room</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+        <div class="game-container">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="round-info">
+                    Round: <span id="roundNumber">1</span>
+                </div>
+                <div class="turn-info">
+                    <span id="turnIndicator">Priority Roll Phase</span>
+                </div>
+                <button class="btn btn-small btn-secondary" onclick="showScreen('wikiScreen')">Wiki</button>
+            </div>
+
+            <!-- Main Game Area -->
+            <div class="game-area">
+                <!-- Other Players Section -->
+                <div id="opponentShips" class="opponent-ships"></div>
+
+                <!-- Current Player Section -->
+                <div class="player-section">
+                    <div class="player-ship-card" id="playerShip">
+                        <!-- Ship card will be populated by JS -->
+                    </div>
+
+                    <!-- Player Hand -->
+                    <div class="player-hand" id="playerHand">
+                        <h3>Your Hand</h3>
+                        <div id="handCards" class="card-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Panel -->
+            <div class="action-panel" id="actionPanel">
+                <h3>Choose Your Action</h3>
+                <div class="action-buttons">
+                    <button class="btn-action" onclick="selectAction('fire')" data-action="fire">
+                        🔥 Fire Cannons
+                        <span class="action-desc">Attack an opponent</span>
+                    </button>
+                    <button class="btn-action" onclick="selectAction('repair')" data-action="repair">
+                        🔧 Repair
+                        <span class="action-desc">Restore 5 HP</span>
+                    </button>
+                    <button class="btn-action" onclick="selectAction('plunder')" data-action="plunder">
+                        💰 Plunder
+                        <span class="action-desc">Draw a Loot card</span>
+                    </button>
+                    <button class="btn-action" onclick="selectAction('reload')" data-action="reload">
+                        💣 Reload
+                        <span class="action-desc">Gain 2 ammo</span>
+                    </button>
+                    <button class="btn-action" onclick="selectAction('maneuver')" data-action="maneuver">
+                        ⛵ Maneuver
+                        <span class="action-desc">Reduce next damage by 20%</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Log -->
+            <div class="game-log">
+                <h3>Battle Log</h3>
+                <div id="logContent" class="log-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wiki Screen -->
+    <div id="wikiScreen" class="screen">
+        <div class="wiki-container">
+            <div class="wiki-sidebar">
+                <h2>Game Wiki</h2>
+                <nav class="wiki-nav">
+                    <a href="#" onclick="showWikiSection('rules')">Game Rules</a>
+                    <a href="#" onclick="showWikiSection('ships')">Ships & Captains</a>
+                    <a href="#" onclick="showWikiSection('actions')">Actions Guide</a>
+                    <a href="#" onclick="showWikiSection('cards')">Card Database</a>
+                    <a href="#" onclick="showWikiSection('crew')">Crew Mechanics</a>
+                    <a href="#" onclick="showWikiSection('strategy')">Strategy Tips</a>
+                </nav>
+                <button class="btn btn-secondary" onclick="returnFromWiki()">Back to Game</button>
+            </div>
+            <div class="wiki-content" id="wikiContent">
+                <!-- Wiki content will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal()"></div>
+    
+    <!-- Dice Roll Modal -->
+    <div id="diceModal" class="modal">
+        <div class="modal-content">
+            <h2>Roll for Priority</h2>
+            <div class="dice-container">
+                <div class="die" id="die1">?</div>
+                <div class="die" id="die2">?</div>
+            </div>
+            <p class="dice-result">Total: <span id="diceTotal">-</span></p>
+            <button class="btn btn-primary" onclick="rollDice()">Roll Dice</button>
+        </div>
+    </div>
+
+    <!-- Target Selection Modal -->
+    <div id="targetModal" class="modal">
+        <div class="modal-content">
+            <h2>Select Target</h2>
+            <div id="targetList" class="target-list"></div>
+        </div>
+    </div>
+
+    <!-- Card Play Modal -->
+    <div id="cardModal" class="modal">
+        <div class="modal-content card-modal-content">
+            <div id="cardDisplay"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="playCardBtn" onclick="playSelectedCard()">Play Card</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="victoryModal" class="modal">
+        <div class="modal-content victory-content">
+            <h2>⚓ Victory! ⚓</h2>
+            <p id="victoryMessage"></p>
+            <button class="btn btn-primary" onclick="returnToMainMenu()">Return to Main Menu</button>
+        </div>
+    </div>
+
+    <script src="gameData.js"></script>
+    <script src="multiplayer.js"></script>
+    <script src="gameEngine.js"></script>
+    <script src="ui.js"></script>
+    <script src="wiki.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

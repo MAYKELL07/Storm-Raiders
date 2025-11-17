@@ -1,0 +1,19 @@
+{
+  "name": "raiders-on-deck",
+  "version": "1.0.0",
+  "description": "A multiplayer pirate battle card game - High Seas Strategy & Combat",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 3000",
+    "dev": "npx http-server -p 3000"
+  },
+  "keywords": [
+    "game",
+    "pirate",
+    "multiplayer",
+    "card-game",
+    "strategy"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

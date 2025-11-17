@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raiders on Deck - Game Info</title>
+    <style>
+        body {
+            font-family: Georgia, serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #0D2D35 0%, #1A535C 100%);
+            color: #F5F5DC;
+        }
+        .container {
+            background: rgba(62, 39, 35, 0.95);
+            border: 4px solid #FFD700;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        }
+        h1 {
+            color: #FFD700;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #FFD700;
+            border-bottom: 2px solid #D2691E;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #D2691E, #8B4513);
+            color: #F5F5DC;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 10px;
+            text-align: center;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        .center {
+            text-align: center;
+            margin: 30px 0;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: rgba(26, 83, 92, 0.5);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #FFD700;
+        }
+        .feature-card h3 {
+            color: #FFD700;
+            margin-top: 0;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚓ Raiders on Deck ⚓</h1>
+        <p style="text-align: center; font-size: 1.2rem; font-style: italic;">
+            A High Seas Strategy & Combat Game
+        </p>
+
+        <div class="center">
+            <a href="index.html" class="btn">🎮 PLAY GAME</a>
+        </div>
+
+        <h2>🎯 What is Raiders on Deck?</h2>
+        <p>
+            Raiders on Deck is a fully functional web-based multiplayer pirate battle game. 
+            Command your ship, manage your crew, play strategic cards, and sink your opponents 
+            in turn-based naval combat!
+        </p>
+
+        <h2>✨ Key Features</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🚢 6 Unique Ships</h3>
+                <p>Each with special captain abilities and different stats</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎴 40+ Cards</h3>
+                <p>Action, Loot, Event, and Starter cards with unique effects</p>
+            </div>
+            <div class="feature-card">
+                <h3>👥 Multiplayer</h3>
+                <p>2-6 players with room codes and real-time sync</p>
+            </div>
+            <div class="feature-card">
+                <h3>📚 Complete Wiki</h3>
+                <p>In-game guide with rules, strategies, and card database</p>
+            </div>
+            <div class="feature-card">
+                <h3>⚔️ 5 Actions</h3>
+                <p>Fire, Repair, Plunder, Reload, and Maneuver - each with consequences</p>
+            </div>
+            <div class="feature-card">
+                <h3>🏆 3 Win Conditions</h3>
+                <p>Last ship standing, treasure maps, or gold accumulation</p>
+            </div>
+        </div>
+
+        <h2>🎮 How to Play</h2>
+        <ol>
+            <li><strong>Create or Join a Room</strong> - Get a 6-character room code</li>
+            <li><strong>Wait for Players</strong> - Minimum 2 players required</li>
+            <li><strong>Get Your Ship</strong> - Random ship assignment with unique abilities</li>
+            <li><strong>Roll for Priority</strong> - Determine turn order each round</li>
+            <li><strong>Choose Your Action</strong> - Fire cannons, repair, plunder, reload, or maneuver</li>
+            <li><strong>Play Cards</strong> - Use powerful effects from your hand</li>
+            <li><strong>Sink Opponents</strong> - Be the last captain standing!</li>
+        </ol>
+
+        <h2>🏴‍☠️ The Ships</h2>
+        <ul>
+            <li><strong>Black Serpent</strong> - Balanced attacker with free rerolls</li>
+            <li><strong>Stormrider</strong> - Defensive tank with 40% maneuver reduction</li>
+            <li><strong>Golden Harpoon</strong> - Fast loot-focused glass cannon</li>
+            <li><strong>Crimson Kraken</strong> - Retaliator that punishes attackers</li>
+            <li><strong>Azure Wave</strong> - Versatile healer with enhanced repairs</li>
+            <li><strong>Silent Corsair</strong> - High-risk high-reward with event immunity</li>
+        </ul>
+
+        <h2>📖 Game Mechanics</h2>
+        <ul>
+            <li><strong>Damage Calculation:</strong> Dice + Attack Bonus - Defense - Maneuver</li>
+            <li><strong>Crew System:</strong> Active crew can reroll dice, inactive crew are reserves</li>
+            <li><strong>Ammunition:</strong> Required for attacks, reload to resupply</li>
+            <li><strong>Action Consequences:</strong> Every action has trade-offs</li>
+            <li><strong>Card Effects:</strong> Damage boosters, healing, debuffs, resources</li>
+        </ul>
+
+        <h2>🚀 Testing Multiplayer</h2>
+        <p>To test on one computer:</p>
+        <ol>
+            <li>Open <code>index.html</code> in your browser</li>
+            <li>Create a room and note the 6-character code</li>
+            <li>Open a second browser window (or incognito mode)</li>
+            <li>Join the room using the code</li>
+            <li>Start the game from the first window (host)</li>
+        </ol>
+
+        <h2>📂 Files Included</h2>
+        <ul>
+            <li><code>index.html</code> - Main game page</li>
+            <li><code>styles.css</code> - Pirate-themed styling and animations</li>
+            <li><code>gameData.js</code> - Ships, cards, and game constants</li>
+            <li><code>gameEngine.js</code> - Core game logic and mechanics</li>
+            <li><code>multiplayer.js</code> - Room system and state synchronization</li>
+            <li><code>ui.js</code> - User interface management</li>
+            <li><code>wiki.js</code> - In-game guide and documentation</li>
+            <li><code>main.js</code> - Game flow controller</li>
+            <li><code>README.md</code> - Detailed documentation</li>
+            <li><code>QUICKSTART.md</code> - Quick start guide</li>
+        </ul>
+
+        <h2>🎨 Design Highlights</h2>
+        <ul>
+            <li><strong>Pirate Theme:</strong> Ocean backgrounds, wooden panels, gold accents</li>
+            <li><strong>Smooth Animations:</strong> Damage shake, heal glow, dice rolling</li>
+            <li><strong>Responsive UI:</strong> Works on desktop and tablets</li>
+            <li><strong>Visual Feedback:</strong> Turn indicators, HP colors, active effects</li>
+            <li><strong>Accessibility:</strong> Clear text, high contrast, intuitive controls</li>
+        </ul>
+
+        <h2>💡 Tips for Success</h2>
+        <ul>
+            <li>Read the in-game wiki for detailed strategies</li>
+            <li>Each ship plays differently - learn your strengths!</li>
+            <li>Manage resources carefully - don't run out of ammo</li>
+            <li>Time your cards for maximum impact</li>
+            <li>Remember action consequences (e.g., Maneuver reduces next attack)</li>
+            <li>Focus fire on one opponent rather than spreading damage</li>
+        </ul>
+
+        <h2>🔧 Technical Notes</h2>
+        <p>
+            This demo uses <strong>localStorage</strong> for multiplayer functionality, 
+            which means players must be on the same computer (different browser windows). 
+            For true online multiplayer, you would need to implement:
+        </p>
+        <ul>
+            <li>WebSocket server (Node.js + Socket.io)</li>
+            <li>Backend database for persistent rooms</li>
+            <li>User authentication system</li>
+            <li>Deployed hosting (Heroku, AWS, etc.)</li>
+        </ul>
+
+        <h2>🌟 Future Enhancements</h2>
+        <p>Potential additions for future versions:</p>
+        <ul>
+            <li>Real online multiplayer with WebSockets</li>
+            <li>AI opponents for single-player mode</li>
+            <li>Campaign mode with storyline</li>
+            <li>Additional ship and card sets</li>
+            <li>Sound effects and background music</li>
+            <li>Player statistics and leaderboards</li>
+            <li>Mobile app version</li>
+        </ul>
+
+        <div class="center" style="margin-top: 40px;">
+            <a href="index.html" class="btn">🎮 START PLAYING NOW</a>
+        </div>
+
+        <p style="text-align: center; margin-top: 40px; opacity: 0.8; font-size: 0.9rem;">
+            Based on the "Raiders on Deck" tabletop game concept<br>
+            Web implementation © 2024
+        </p>
+    </div>
+</body>
+</html>
