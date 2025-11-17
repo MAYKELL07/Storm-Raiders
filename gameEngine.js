@@ -7,6 +7,7 @@ class GameEngine {
         this.currentPhase = 'priority'; // priority, action, resolution
         this.turnOrder = [];
         this.currentPlayerIndex = 0;
+        this.priorityRolled = false; // Track if priority has been rolled
         this.decks = {
             action: createDeck(ACTION_CARDS, 3),
             loot: createDeck(LOOT_CARDS, 5),
@@ -78,6 +79,7 @@ class GameEngine {
         
         this.currentPlayerIndex = 0;
         this.currentPhase = 'action';
+        this.priorityRolled = true; // Mark that priority has been rolled
         
         this.log(`Turn order: ${this.turnOrder.map(id => this.getPlayer(id).name).join(' → ')}`);
     }
@@ -136,10 +138,10 @@ class GameEngine {
             return { gameOver: true, winner };
         }
 
-        // Start new round
+        // Start new round - reset to first player in turn order
         this.currentRound++;
-        this.currentPhase = 'priority';
-        this.players.forEach(p => p.priorityRoll = 0);
+        this.currentPlayerIndex = 0;
+        this.currentPhase = 'action';
         
         // Draw event card (20% chance)
         if (Math.random() < 0.2) {

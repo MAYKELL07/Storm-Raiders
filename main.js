@@ -176,6 +176,7 @@ function initializeGameFromRoom(room) {
     gameEngine.currentPhase = gs.currentPhase || 'priority';
     gameEngine.turnOrder = gs.turnOrder || [];
     gameEngine.currentPlayerIndex = gs.currentPlayerIndex || 0;
+    gameEngine.priorityRolled = gs.priorityRolled || false;
     gameEngine.decks = gs.decks || gameEngine.decks;
     gameEngine.activeEffects = gs.activeEffects || [];
     gameEngine.currentEvent = gs.currentEvent || null;
@@ -190,8 +191,8 @@ function initializeGameFromRoom(room) {
     showScreen('gameScreen');
     updateGameScreen();
 
-    // Check current phase
-    if (gameEngine.currentPhase === 'priority') {
+    // Check current phase - only show priority if not yet rolled
+    if (gameEngine.currentPhase === 'priority' && !gameEngine.priorityRolled) {
         startPriorityPhase();
     }
 }
@@ -205,6 +206,7 @@ function syncGameState(gameState) {
     gameEngine.currentPhase = gameState.currentPhase || 'priority';
     gameEngine.turnOrder = gameState.turnOrder || [];
     gameEngine.currentPlayerIndex = gameState.currentPlayerIndex || 0;
+    gameEngine.priorityRolled = gameState.priorityRolled || false;
     gameEngine.decks = gameState.decks || gameEngine.decks;
     gameEngine.activeEffects = gameState.activeEffects || [];
     gameEngine.currentEvent = gameState.currentEvent || null;
@@ -214,7 +216,7 @@ function syncGameState(gameState) {
     updateGameScreen();
 
     // Check current phase and handle accordingly
-    if (gameState.currentPhase === 'priority') {
+    if (gameState.currentPhase === 'priority' && !gameState.priorityRolled) {
         // Check if we need to roll
         const currentPlayerData = gameEngine.players.find(p => p.id === currentPlayerId);
         if (currentPlayerData && currentPlayerData.priorityRoll === 0) {
