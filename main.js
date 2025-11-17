@@ -249,8 +249,7 @@ function startPriorityPhase() {
     if (currentPlayerData && currentPlayerData.priorityRoll > 0) {
         // Already rolled, just wait for others
         console.log('Already rolled, waiting for other players...');
-        uiManager.showNotification('⏳ Waiting for other players to roll...');
-        return;
+        return; // Don't show notification or modal
     }
     
     // Show notification that it's time to roll
