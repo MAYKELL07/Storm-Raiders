@@ -7,6 +7,22 @@ class MultiplayerManager {
         this.playerId = this.generatePlayerId();
         this.playerName = '';
         this.updateInterval = null;
+        this.lastKnownState = null;
+        
+        // Listen for storage events from other tabs/windows
+        window.addEventListener('storage', (e) => {
+            if (e.key && e.key.startsWith('room_') && this.currentRoom) {
+                const roomKey = 'room_' + this.currentRoom.code;
+                if (e.key === roomKey) {
+                    // Room data changed in another tab
+                    const room = this.loadRoom(this.currentRoom.code);
+                    if (room) {
+                        this.currentRoom = room;
+                        this.onRoomUpdate(room);
+                    }
+                }
+            }
+        });
     }
 
     generatePlayerId() {
@@ -165,6 +181,21 @@ class MultiplayerManager {
     // Storage methods
     saveRoom(room) {
         localStorage.setItem(`room_${room.code}`, JSON.stringify(room));
+        
+        // Force immediate update check for better same-browser sync
+        setTimeout(() => {
+            if (this.currentRoom && this.currentRoom.code === room.code) {
+                const freshRoom = this.loadRoom(room.code);
+                if (freshRoom) {
+                    const newStateStr = JSON.stringify(freshRoom.gameState);
+                    if (newStateStr !== this.lastKnownState) {
+                        this.lastKnownState = newStateStr;
+                        this.currentRoom = freshRoom;
+                        this.onRoomUpdate(freshRoom);
+                    }
+                }
+            }
+        }, 50);
     }
 
     loadRoom(roomCode) {
@@ -183,11 +214,18 @@ class MultiplayerManager {
             if (this.currentRoom) {
                 const room = this.loadRoom(this.currentRoom.code);
                 if (room) {
-                    this.currentRoom = room;
-                    this.onRoomUpdate(room);
+                    // Check if state actually changed
+                    const newStateStr = JSON.stringify(room.gameState);
+                    const oldStateStr = this.lastKnownState;
+                    
+                    if (newStateStr !== oldStateStr) {
+                        this.lastKnownState = newStateStr;
+                        this.currentRoom = room;
+                        this.onRoomUpdate(room);
+                    }
                 }
             }
-        }, 1000); // Check every second
+        }, 500); // Check every 500ms for faster updates
     }
 
     stopPolling() {
