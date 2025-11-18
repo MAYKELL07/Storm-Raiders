@@ -42,7 +42,7 @@ class MultiplayerManager {
         return code;
     }
 
-    createRoom(playerName, maxPlayers) {
+    async createRoom(playerName, maxPlayers) {
         const roomCode = this.generateRoomCode();
         this.playerName = playerName;
         
@@ -62,7 +62,7 @@ class MultiplayerManager {
             createdAt: Date.now()
         };
 
-        this.saveRoom(room);
+        await this.saveRoom(room);
         this.currentRoom = room;
         this.startPolling();
         
@@ -105,10 +105,10 @@ class MultiplayerManager {
         return room;
     }
 
-    leaveRoom() {
+    async leaveRoom() {
         if (!this.currentRoom) return;
 
-        const room = this.loadRoom(this.currentRoom.code);
+        const room = await this.loadRoom(this.currentRoom.code);
         if (!room) return;
 
         // Remove player from room
@@ -116,69 +116,69 @@ class MultiplayerManager {
 
         // If host left, assign new host or delete room
         if (room.players.length === 0) {
-            this.deleteRoom(room.code);
+            await this.deleteRoom(room.code);
         } else if (room.hostId === this.playerId) {
             room.hostId = room.players[0].id;
             room.players[0].isHost = true;
-            this.saveRoom(room);
+            await this.saveRoom(room);
         } else {
-            this.saveRoom(room);
+            await this.saveRoom(room);
         }
 
         this.stopPolling();
         this.currentRoom = null;
     }
 
-    updatePlayerReady(ready) {
+    async updatePlayerReady(ready) {
         if (!this.currentRoom) return;
 
-        const room = this.loadRoom(this.currentRoom.code);
+        const room = await this.loadRoom(this.currentRoom.code);
         if (!room) return;
 
         const player = room.players.find(p => p.id === this.playerId);
         if (player) {
             player.ready = ready;
-            this.saveRoom(room);
+            await this.saveRoom(room);
         }
     }
 
-    startGame(gameState) {
+    async startGame(gameState) {
         if (!this.currentRoom) return;
 
-        const room = this.loadRoom(this.currentRoom.code);
+        const room = await this.loadRoom(this.currentRoom.code);
         if (!room) return;
 
         room.status = 'playing';
         room.gameState = gameState;
-        this.saveRoom(room);
+        await this.saveRoom(room);
     }
 
-    updateGameState(gameState) {
+    async updateGameState(gameState) {
         if (!this.currentRoom) return;
 
-        const room = this.loadRoom(this.currentRoom.code);
+        const room = await this.loadRoom(this.currentRoom.code);
         if (!room) return;
 
         room.gameState = gameState;
         room.lastUpdate = Date.now();
-        this.saveRoom(room);
+        await this.saveRoom(room);
     }
 
-    getGameState() {
+    async getGameState() {
         if (!this.currentRoom) return null;
 
-        const room = this.loadRoom(this.currentRoom.code);
+        const room = await this.loadRoom(this.currentRoom.code);
         return room ? room.gameState : null;
     }
 
-    getRoom() {
+    async getRoom() {
         if (!this.currentRoom) return null;
-        return this.loadRoom(this.currentRoom.code);
+        return await this.loadRoom(this.currentRoom.code);
     }
 
-    isHost() {
+    async isHost() {
         if (!this.currentRoom) return false;
-        const room = this.loadRoom(this.currentRoom.code);
+        const room = await this.loadRoom(this.currentRoom.code);
         return room && room.hostId === this.playerId;
     }
 

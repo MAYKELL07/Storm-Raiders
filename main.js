@@ -95,8 +95,8 @@ function leaveRoom() {
     }
 }
 
-function updateLobbyScreen() {
-    const room = multiplayerManager.getRoom();
+async function updateLobbyScreen() {
+    const room = await multiplayerManager.getRoom();
     if (!room) return;
 
     document.getElementById('lobbyRoomCode').textContent = room.code;
@@ -118,15 +118,16 @@ function updateLobbyScreen() {
 
     // Show start button only for host
     const startBtn = document.getElementById('startGameBtn');
-    if (multiplayerManager.isHost() && room.players.length >= 2) {
+    const isHost = await multiplayerManager.isHost();
+    if (isHost && room.players.length >= 2) {
         startBtn.style.display = 'block';
     } else {
         startBtn.style.display = 'none';
     }
 }
 
-function startGame() {
-    const room = multiplayerManager.getRoom();
+async function startGame() {
+    const room = await multiplayerManager.getRoom();
     if (!room || room.players.length < 2) {
         alert('Need at least 2 players to start!');
         return;
@@ -153,7 +154,7 @@ function startGame() {
     window.gameEngine = gameEngine;
 
     // Save game state
-    multiplayerManager.startGame(gameEngine.getGameState());
+    await multiplayerManager.startGame(gameEngine.getGameState());
 
     // Show game screen
     showScreen('gameScreen');
