@@ -62,7 +62,7 @@ class MultiplayerManager {
             createdAt: Date.now()
         };
 
-        await this.saveRoom(room);
+        await this.saveRoom(room, true); // Force create
         this.currentRoom = room;
         this.startPolling();
         
@@ -183,24 +183,42 @@ class MultiplayerManager {
     }
 
     // Storage methods - API first, localStorage fallback
-    async saveRoom(room) {
+    async saveRoom(room, forceCreate = false) {
         if (this.useLocalStorage) {
             return this.saveRoomLocal(room);
         }
 
         try {
+            // Determine action - if forceCreate or this is a new room, use 'create'
+            let action = 'update';
+            if (forceCreate) {
+                action = 'create';
+            } else {
+                // Check if room exists in API
+                try {
+                    const checkResponse = await fetch(`${this.apiUrl}?code=${room.code}`);
+                    if (checkResponse.status === 404) {
+                        action = 'create';
+                    }
+                } catch (e) {
+                    action = 'create'; // If check fails, assume it doesn't exist
+                }
+            }
+
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: room.players.find(p => p.id === this.playerId) ? 'update' : 'create',
+                    action: action,
                     roomCode: room.code,
                     roomData: room
                 })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save room');
+                const errorData = await response.json();
+                console.error('API error:', errorData);
+                throw new Error(errorData.error || 'Failed to save room');
             }
 
             const data = await response.json();

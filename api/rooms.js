@@ -35,16 +35,19 @@ export default function handler(req, res) {
     const { action, roomCode, roomData } = req.body || {};
     const queryCode = req.query.code;
 
+    console.log('API Request:', { method, action, roomCode, queryCode, roomsCount: Object.keys(rooms).length });
+
     try {
         switch (method) {
             case 'GET':
                 // Get room by code
                 if (queryCode) {
                     const room = rooms[queryCode];
+                    console.log('GET room:', queryCode, 'found:', !!room);
                     if (room) {
                         return res.status(200).json({ success: true, room });
                     } else {
-                        return res.status(404).json({ success: false, error: 'Room not found' });
+                        return res.status(404).json({ success: false, error: 'Room not found', availableRooms: Object.keys(rooms) });
                     }
                 }
                 // List all active rooms
@@ -53,25 +56,31 @@ export default function handler(req, res) {
             case 'POST':
                 if (action === 'create') {
                     // Create new room
+                    console.log('Creating room:', roomData.code);
                     rooms[roomData.code] = roomData;
+                    console.log('Room created. Total rooms:', Object.keys(rooms).length);
                     return res.status(201).json({ success: true, room: roomData });
                 } else if (action === 'update') {
                     // Update existing room
+                    console.log('Updating room:', roomCode);
                     if (rooms[roomCode]) {
                         rooms[roomCode] = { ...rooms[roomCode], ...roomData };
                         return res.status(200).json({ success: true, room: rooms[roomCode] });
                     } else {
+                        console.log('Room not found for update:', roomCode);
                         return res.status(404).json({ success: false, error: 'Room not found' });
                     }
                 } else if (action === 'join') {
                     // Join existing room
+                    console.log('Joining room:', roomCode);
                     if (rooms[roomCode]) {
                         return res.status(200).json({ success: true, room: rooms[roomCode] });
                     } else {
-                        return res.status(404).json({ success: false, error: 'Room not found' });
+                        console.log('Room not found for join:', roomCode, 'Available:', Object.keys(rooms));
+                        return res.status(404).json({ success: false, error: 'Room not found', availableRooms: Object.keys(rooms) });
                     }
                 }
-                break;
+                return res.status(400).json({ success: false, error: 'Invalid action' });
 
             case 'DELETE':
                 // Delete room
