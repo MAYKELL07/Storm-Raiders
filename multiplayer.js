@@ -63,7 +63,11 @@ class MultiplayerManager {
         };
 
         await this.saveRoom(room, true); // Force create
-        this.currentRoom = room;
+        
+        // Reload to ensure we have the server's version
+        const savedRoom = await this.loadRoom(roomCode);
+        this.currentRoom = savedRoom || room;
+        
         this.startPolling();
         
         return roomCode;
@@ -97,12 +101,17 @@ class MultiplayerManager {
             });
             
             await this.saveRoom(room);
+            
+            // Reload room to get the saved state
+            const updatedRoom = await this.loadRoom(roomCode);
+            this.currentRoom = updatedRoom || room;
+        } else {
+            this.currentRoom = room;
         }
         
-        this.currentRoom = room;
         this.startPolling();
         
-        return room;
+        return this.currentRoom;
     }
 
     async leaveRoom() {
@@ -325,13 +334,13 @@ class MultiplayerManager {
             if (this.currentRoom) {
                 const room = await this.loadRoom(this.currentRoom.code);
                 if (room) {
-                    // Check if state actually changed
-                    const newStateStr = JSON.stringify(room.gameState);
-                    const oldStateStr = this.lastKnownState;
+                    // Check if anything changed (room data or game state)
+                    const newRoomStr = JSON.stringify(room);
+                    const oldRoomStr = JSON.stringify(this.currentRoom);
                     
-                    if (newStateStr !== oldStateStr) {
-                        this.lastKnownState = newStateStr;
+                    if (newRoomStr !== oldRoomStr) {
                         this.currentRoom = room;
+                        this.lastKnownState = JSON.stringify(room.gameState);
                         this.onRoomUpdate(room);
                     }
                 }
