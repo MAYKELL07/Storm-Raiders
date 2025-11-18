@@ -1,5 +1,5 @@
-// Multiplayer System using LocalStorage for demo purposes
-// In production, this would use WebSockets or a backend service
+// Multiplayer System using Vercel Serverless API for cross-device sync
+// Falls back to localStorage for local testing
 
 class MultiplayerManager {
     constructor() {
@@ -8,14 +8,18 @@ class MultiplayerManager {
         this.playerName = '';
         this.updateInterval = null;
         this.lastKnownState = null;
+        this.apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3000/api/rooms'  // Local testing
+            : '/api/rooms';  // Production on Vercel
+        this.useLocalStorage = false; // Set to true for offline testing
         
-        // Listen for storage events from other tabs/windows
+        // Listen for storage events from other tabs/windows (localStorage fallback)
         window.addEventListener('storage', (e) => {
             if (e.key && e.key.startsWith('room_') && this.currentRoom) {
                 const roomKey = 'room_' + this.currentRoom.code;
                 if (e.key === roomKey) {
                     // Room data changed in another tab
-                    const room = this.loadRoom(this.currentRoom.code);
+                    const room = this.loadRoomLocal(this.currentRoom.code);
                     if (room) {
                         this.currentRoom = room;
                         this.onRoomUpdate(room);
@@ -65,8 +69,8 @@ class MultiplayerManager {
         return roomCode;
     }
 
-    joinRoom(roomCode, playerName) {
-        const room = this.loadRoom(roomCode);
+    async joinRoom(roomCode, playerName) {
+        const room = await this.loadRoom(roomCode);
         
         if (!room) {
             throw new Error('Room not found');
@@ -92,7 +96,7 @@ class MultiplayerManager {
                 ship: null
             });
             
-            this.saveRoom(room);
+            await this.saveRoom(room);
         }
         
         this.currentRoom = room;
@@ -178,14 +182,102 @@ class MultiplayerManager {
         return room && room.hostId === this.playerId;
     }
 
-    // Storage methods
-    saveRoom(room) {
+    // Storage methods - API first, localStorage fallback
+    async saveRoom(room) {
+        if (this.useLocalStorage) {
+            return this.saveRoomLocal(room);
+        }
+
+        try {
+            const response = await fetch(this.apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: room.players.find(p => p.id === this.playerId) ? 'update' : 'create',
+                    roomCode: room.code,
+                    roomData: room
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save room');
+            }
+
+            const data = await response.json();
+            
+            // Force immediate update check for better sync
+            setTimeout(() => {
+                if (this.currentRoom && this.currentRoom.code === room.code) {
+                    this.loadRoom(room.code).then(freshRoom => {
+                        if (freshRoom) {
+                            const newStateStr = JSON.stringify(freshRoom.gameState);
+                            if (newStateStr !== this.lastKnownState) {
+                                this.lastKnownState = newStateStr;
+                                this.currentRoom = freshRoom;
+                                this.onRoomUpdate(freshRoom);
+                            }
+                        }
+                    });
+                }
+            }, 50);
+
+            return data.room;
+        } catch (error) {
+            console.error('API save failed, falling back to localStorage:', error);
+            this.useLocalStorage = true;
+            return this.saveRoomLocal(room);
+        }
+    }
+
+    async loadRoom(roomCode) {
+        if (this.useLocalStorage) {
+            return this.loadRoomLocal(roomCode);
+        }
+
+        try {
+            const response = await fetch(`${this.apiUrl}?code=${roomCode}`);
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    return null;
+                }
+                throw new Error('Failed to load room');
+            }
+
+            const data = await response.json();
+            return data.room;
+        } catch (error) {
+            console.error('API load failed, falling back to localStorage:', error);
+            this.useLocalStorage = true;
+            return this.loadRoomLocal(roomCode);
+        }
+    }
+
+    async deleteRoom(roomCode) {
+        if (this.useLocalStorage) {
+            return this.deleteRoomLocal(roomCode);
+        }
+
+        try {
+            await fetch(this.apiUrl, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roomCode })
+            });
+        } catch (error) {
+            console.error('API delete failed:', error);
+            this.deleteRoomLocal(roomCode);
+        }
+    }
+
+    // LocalStorage fallback methods
+    saveRoomLocal(room) {
         localStorage.setItem(`room_${room.code}`, JSON.stringify(room));
         
         // Force immediate update check for better same-browser sync
         setTimeout(() => {
             if (this.currentRoom && this.currentRoom.code === room.code) {
-                const freshRoom = this.loadRoom(room.code);
+                const freshRoom = this.loadRoomLocal(room.code);
                 if (freshRoom) {
                     const newStateStr = JSON.stringify(freshRoom.gameState);
                     if (newStateStr !== this.lastKnownState) {
@@ -196,23 +288,24 @@ class MultiplayerManager {
                 }
             }
         }, 50);
+        return room;
     }
 
-    loadRoom(roomCode) {
+    loadRoomLocal(roomCode) {
         const data = localStorage.getItem(`room_${roomCode}`);
         return data ? JSON.parse(data) : null;
     }
 
-    deleteRoom(roomCode) {
+    deleteRoomLocal(roomCode) {
         localStorage.removeItem(`room_${roomCode}`);
     }
 
     // Polling for updates (simulates real-time)
     startPolling() {
         this.stopPolling();
-        this.updateInterval = setInterval(() => {
+        this.updateInterval = setInterval(async () => {
             if (this.currentRoom) {
-                const room = this.loadRoom(this.currentRoom.code);
+                const room = await this.loadRoom(this.currentRoom.code);
                 if (room) {
                     // Check if state actually changed
                     const newStateStr = JSON.stringify(room.gameState);

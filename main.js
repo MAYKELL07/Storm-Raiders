@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Room Management Functions
-function createRoom() {
+async function createRoom() {
     const playerName = document.getElementById('createPlayerName').value.trim();
     const maxPlayers = document.getElementById('maxPlayers').value;
 
@@ -25,7 +25,7 @@ function createRoom() {
     }
 
     try {
-        const roomCode = multiplayerManager.createRoom(playerName, maxPlayers);
+        const roomCode = await multiplayerManager.createRoom(playerName, maxPlayers);
         console.log('Room created:', roomCode);
         
         showScreen('lobbyScreen');
@@ -48,7 +48,7 @@ function createRoom() {
     }
 }
 
-function joinRoom() {
+async function joinRoom() {
     const playerName = document.getElementById('joinPlayerName').value.trim();
     const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
 
@@ -63,7 +63,7 @@ function joinRoom() {
     }
 
     try {
-        multiplayerManager.joinRoom(roomCode, playerName);
+        await multiplayerManager.joinRoom(roomCode, playerName);
         console.log('Joined room:', roomCode);
         
         showScreen('lobbyScreen');
