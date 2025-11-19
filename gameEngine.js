@@ -303,11 +303,14 @@ class GameEngine {
             return { success: false, message: 'Cannot repair: Repaired last turn without taking new damage' };
         }
 
-        let healAmount = GAME_CONSTANTS.BASE_REPAIR_AMOUNT;
+        // Roll dice for repair amount
+        const die1 = Math.floor(Math.random() * 6) + 1;
+        const die2 = Math.floor(Math.random() * 6) + 1;
+        let healAmount = die1 + die2;
 
-        // Azure Wave buff
+        // Azure Wave buff - adds +2 to repair rolls
         if (player.ship.id === 'azureWave') {
-            healAmount = 8;
+            healAmount += 2;
         }
 
         const oldHp = player.ship.hp;
@@ -322,9 +325,9 @@ class GameEngine {
 
         player.lastRepairRound = this.currentRound;
 
-        this.log(`🔧 ${player.name} repairs for ${actualHeal} HP! (${player.ship.hp}/${player.ship.maxHp} HP)`);
+        this.log(`🔧 ${player.name} repairs! Rolled ${die1}+${die2}, healed ${actualHeal} HP! (${player.ship.hp}/${player.ship.maxHp} HP)`);
 
-        return { success: true, message: `Repaired ${actualHeal} HP!`, healed: actualHeal };
+        return { success: true, message: `Repaired ${actualHeal} HP!`, healed: actualHeal, dice: { die1, die2 } };
     }
 
     actionPlunder(player) {
@@ -364,11 +367,22 @@ class GameEngine {
             return { success: false, message: 'Cannot maneuver this turn after reloading!' };
         }
 
+        // Roll dice for maneuver effectiveness
+        const die1 = Math.floor(Math.random() * 6) + 1;
+        const die2 = Math.floor(Math.random() * 6) + 1;
+        const total = die1 + die2;
+
         player.maneuvering = true;
 
-        this.log(`⛵ ${player.name} maneuvers to evade incoming attacks!`);
-
-        return { success: true, message: 'Maneuvering for defense!' };
+        // Critical success on 10+ gives bonus damage reduction
+        if (total >= 10) {
+            player.hasManeuverBonus = true;
+            this.log(`⛵ ${player.name} maneuvers expertly! Rolled ${die1}+${die2}=${total} - CRITICAL! Extra damage reduction!`);
+            return { success: true, message: 'Critical maneuver! Enhanced defense!', dice: { die1, die2 }, critical: true };
+        } else {
+            this.log(`⛵ ${player.name} maneuvers to evade! Rolled ${die1}+${die2}=${total}`);
+            return { success: true, message: 'Maneuvering for defense!', dice: { die1, die2 } };
+        }
     }
 
     // Card management
@@ -421,16 +435,22 @@ class GameEngine {
                 break;
 
             case 'heal':
+                const die1 = Math.floor(Math.random() * 6) + 1;
+                const die2 = Math.floor(Math.random() * 6) + 1;
+                const healRoll = die1 + die2;
                 const oldHp = player.ship.hp;
-                player.ship.hp = Math.min(player.ship.maxHp, player.ship.hp + effect.value);
-                message = `Healed ${player.ship.hp - oldHp} HP!`;
+                player.ship.hp = Math.min(player.ship.maxHp, player.ship.hp + healRoll);
+                message = `Healed ${player.ship.hp - oldHp} HP! (Rolled ${die1}+${die2})`;
                 break;
 
             case 'healAndCleanse':
-                const healed = Math.min(effect.value, player.ship.maxHp - player.ship.hp);
+                const healDie1 = Math.floor(Math.random() * 6) + 1;
+                const healDie2 = Math.floor(Math.random() * 6) + 1;
+                const healAmount = healDie1 + healDie2;
+                const healed = Math.min(healAmount, player.ship.maxHp - player.ship.hp);
                 player.ship.hp += healed;
                 player.effects = player.effects.filter(e => e.type !== 'burn' && e.type !== 'damagePenalty');
-                message = `Healed ${healed} HP and cleansed all debuffs!`;
+                message = `Healed ${healed} HP (Rolled ${healDie1}+${healDie2}) and cleansed all debuffs!`;
                 break;
 
             case 'ammunition':
