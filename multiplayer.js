@@ -8,10 +8,21 @@ class MultiplayerManager {
         this.playerName = '';
         this.updateInterval = null;
         this.lastKnownState = null;
+        this.instanceId = 'mp_' + Math.random().toString(36).slice(2);
+        this.apiAvailable = true;
+        this.apiFailureCount = 0;
+        this.maxApiFailures = 2;
+        this.channel = null;
         this.apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:3000/api/rooms'  // Local testing
             : '/api/rooms';  // Production on Vercel
-        this.useLocalStorage = false; // Set to true for offline testing
+        this.useLocalStorage = false; // Will flip to true automatically if API fails repeatedly
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('offline') === '1') {
+            this.useLocalStorage = true;
+            this.apiAvailable = false;
+            console.warn('[WARN] Multiplayer running in forced offline mode');
+        }
         
         // Listen for storage events from other tabs/windows (localStorage fallback)
         window.addEventListener('storage', (e) => {
@@ -27,6 +38,25 @@ class MultiplayerManager {
                 }
             }
         });
+        
+        // BroadcastChannel for real-time same-browser sync (more reliable than polling storage alone)
+        if (typeof BroadcastChannel !== 'undefined') {
+            this.channel = new BroadcastChannel('raiders_room_bus');
+            this.channel.onmessage = (event) => {
+                const data = event.data || {};
+                if (data.sender === this.instanceId) return; // Ignore our own updates
+                
+                if (data.type === 'room_update' && data.room) {
+                    this.saveRoomLocal(data.room, true);
+                } else if (data.type === 'room_delete' && data.code) {
+                    this.deleteRoomLocal(data.code, true);
+                } else if (data.type === 'sync_mode' && data.mode === 'local') {
+                    this.apiAvailable = false;
+                    this.useLocalStorage = true;
+                    console.warn('[WARN] Remote sync disabled in another tab. Switching to local mode.');
+                }
+            };
+        }
     }
 
     generatePlayerId() {
@@ -168,10 +198,10 @@ class MultiplayerManager {
         if (!this.currentRoom) return;
 
         // Load latest room state to get other players' data
-        const latestRoom = await this.loadRoom(this.currentRoom.code);
+        let latestRoom = await this.loadRoom(this.currentRoom.code);
         if (!latestRoom) {
-            console.error('[ERROR] Could not load room for state update');
-            return;
+            console.warn('[WARN] Could not load from API, using current room');
+            latestRoom = this.currentRoom; // Fallback to current room in memory
         }
 
         // Merge game states - preserve data from both
@@ -225,6 +255,10 @@ class MultiplayerManager {
         // Always save to localStorage first for reliability
         this.saveRoomLocal(room);
         
+        if (!this.shouldUseRemoteSync()) {
+            return room;
+        }
+        
         // Try to sync to API but don't fail if it's down
         try {
             // Determine action - if forceCreate or this is a new room, use 'create'
@@ -255,8 +289,7 @@ class MultiplayerManager {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                console.warn('[WARN] API save failed, using localStorage:', errorData.error);
+                this.handleApiFailure(`save:${response.status}`);
                 return room; // Return the locally saved room
             }
             
@@ -264,6 +297,8 @@ class MultiplayerManager {
             if (action === 'create') {
                 console.log(`✅ Room ${room.code} created with ${room.players?.length} players`);
             }
+            
+            this.resetApiFailures();
             
             // Force immediate update check for better sync
             setTimeout(() => {
@@ -291,6 +326,13 @@ class MultiplayerManager {
     async loadRoom(roomCode) {
         // Try localStorage first
         const localRoom = this.loadRoomLocal(roomCode);
+
+        if (!this.shouldUseRemoteSync()) {
+            if (!localRoom) {
+                console.warn('[WARN] Offline mode: requested room missing locally.');
+            }
+            return localRoom;
+        }
         
         // Try to get from API for cross-device sync
         try {
@@ -304,9 +346,13 @@ class MultiplayerManager {
                     this.saveRoomLocal(data.room); // Update localStorage
                     return data.room;
                 }
+            } else if (response.status === 404 && localRoom) {
+                this.handleApiFailure('room_missing');
+            } else if (response.status === 404) {
+                console.warn(`[WARN] API reports room ${roomCode} missing.`);
             }
         } catch (error) {
-            // API failed, use localStorage
+            this.handleApiFailure(error.message);
         }
         
         // Return localStorage version if API fails or room not found
@@ -317,25 +363,34 @@ class MultiplayerManager {
     }
 
     async deleteRoom(roomCode) {
-        if (this.useLocalStorage) {
-            return this.deleteRoomLocal(roomCode);
+        this.deleteRoomLocal(roomCode);
+
+        if (!this.shouldUseRemoteSync()) {
+            return;
         }
 
         try {
-            await fetch(this.apiUrl, {
+            const response = await fetch(this.apiUrl, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ roomCode })
             });
+            if (!response.ok) {
+                this.handleApiFailure(`delete:${response.status}`);
+            } else {
+                this.resetApiFailures();
+            }
         } catch (error) {
-            console.error('API delete failed:', error);
-            this.deleteRoomLocal(roomCode);
+            this.handleApiFailure(error.message);
         }
     }
 
     // LocalStorage fallback methods
-    saveRoomLocal(room) {
+    saveRoomLocal(room, silent = false) {
         localStorage.setItem(`room_${room.code}`, JSON.stringify(room));
+        if (!silent) {
+            this.broadcastRoom(room);
+        }
         
         // Force immediate update check for better same-browser sync
         setTimeout(() => {
@@ -359,8 +414,53 @@ class MultiplayerManager {
         return data ? JSON.parse(data) : null;
     }
 
-    deleteRoomLocal(roomCode) {
+    deleteRoomLocal(roomCode, silent = false) {
         localStorage.removeItem(`room_${roomCode}`);
+        if (!silent) {
+            this.broadcastDelete(roomCode);
+        }
+    }
+
+    shouldUseRemoteSync() {
+        return !this.useLocalStorage && this.apiAvailable;
+    }
+
+    handleApiFailure(reason) {
+        this.apiFailureCount++;
+        if (this.apiAvailable && this.apiFailureCount >= this.maxApiFailures) {
+            console.warn(`[WARN] Remote sync disabled (${reason}). Falling back to local-only mode.`);
+            this.apiAvailable = false;
+            this.useLocalStorage = true;
+            if (this.channel) {
+                this.channel.postMessage({
+                    type: 'sync_mode',
+                    mode: 'local',
+                    sender: this.instanceId
+                });
+            }
+        }
+    }
+
+    resetApiFailures() {
+        this.apiFailureCount = 0;
+    }
+
+    broadcastRoom(room) {
+        if (!this.channel) return;
+        this.channel.postMessage({
+            type: 'room_update',
+            room,
+            sender: this.instanceId
+        });
+    }
+
+    broadcastDelete(roomCode) {
+        if (!this.channel) return;
+        this.channel.postMessage({
+            type: 'room_delete',
+            code: roomCode,
+            sender: this.instanceId
+        });
     }
 
     // Polling for updates (simulates real-time)

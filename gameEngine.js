@@ -568,14 +568,20 @@ class GameEngine {
     }
 
     getGameState() {
-        return {
+        const state = {
             players: this.players,
             currentRound: this.currentRound,
             currentPhase: this.currentPhase,
             turnOrder: this.turnOrder,
             currentPlayerIndex: this.currentPlayerIndex,
+            priorityRolled: this.priorityRolled,
+            decks: this.decks,
+            activeEffects: this.activeEffects,
             currentEvent: this.currentEvent,
             gameLog: this.gameLog.slice(-20) // Last 20 log entries
         };
+        
+        // Return a deep copy so callers don't mutate internal state references
+        return JSON.parse(JSON.stringify(state));
     }
 }

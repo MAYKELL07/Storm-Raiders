@@ -1163,3 +1163,20 @@ body {
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
+
+.version-overlay {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    padding: 8px 14px;
+    background: rgba(4, 10, 20, 0.85);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    z-index: 999;
+}
