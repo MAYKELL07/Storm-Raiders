@@ -35,29 +35,16 @@ export default function handler(req, res) {
     const { action, roomCode, roomData } = req.body || {};
     const queryCode = req.query.code;
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('[API] Request:', { 
-        method, 
-        action, 
-        roomCode, 
-        queryCode, 
-        roomsInMemory: Object.keys(rooms).length,
-        allRoomCodes: Object.keys(rooms)
-    });
-
     try {
         switch (method) {
             case 'GET':
                 // Get room by code
                 if (queryCode) {
                     const room = rooms[queryCode];
-                    console.log(`[API GET] Looking for room: ${queryCode}`);
-                    console.log(`[API GET] Found:`, !!room);
                     if (room) {
-                        console.log(`[API GET] Returning room with ${room.players?.length} players`);
                         return res.status(200).json({ success: true, room });
                     } else {
-                        console.log(`[API GET] Room not found. Available: ${Object.keys(rooms).join(', ')}`);
+                        console.log(`❌ Room ${queryCode} not found. Available: ${Object.keys(rooms).join(', ')}`);
                         return res.status(404).json({ success: false, error: 'Room not found', availableRooms: Object.keys(rooms) });
                     }
                 }
@@ -67,25 +54,16 @@ export default function handler(req, res) {
             case 'POST':
                 if (action === 'create') {
                     // Create new room
-                    console.log(`[API CREATE] Creating room: ${roomData.code}`);
-                    console.log(`[API CREATE] Room data:`, { 
-                        code: roomData.code, 
-                        players: roomData.players?.length,
-                        status: roomData.status 
-                    });
                     rooms[roomData.code] = roomData;
-                    console.log(`[API CREATE] Room created. Total rooms: ${Object.keys(rooms).length}`);
-                    console.log(`[API CREATE] All rooms: ${Object.keys(rooms).join(', ')}`);
+                    console.log(`✅ Room ${roomData.code} created (${Object.keys(rooms).length} total)`);
                     return res.status(201).json({ success: true, room: roomData });
                 } else if (action === 'update') {
                     // Update existing room
-                    console.log(`[API UPDATE] Updating room: ${roomCode}`);
                     if (rooms[roomCode]) {
                         rooms[roomCode] = { ...rooms[roomCode], ...roomData };
-                        console.log(`[API UPDATE] Room updated successfully`);
                         return res.status(200).json({ success: true, room: rooms[roomCode] });
                     } else {
-                        console.log(`[API UPDATE] ERROR: Room ${roomCode} not found for update`);
+                        console.log(`❌ Room ${roomCode} not found for update`);
                         console.log('Room not found for update:', roomCode);
                         return res.status(404).json({ success: false, error: 'Room not found' });
                     }

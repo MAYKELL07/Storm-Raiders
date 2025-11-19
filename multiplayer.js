@@ -44,7 +44,6 @@ class MultiplayerManager {
 
     async createRoom(playerName, maxPlayers) {
         const roomCode = this.generateRoomCode();
-        console.log(`[CREATE] Creating room ${roomCode} for player ${playerName}`);
         this.playerName = playerName;
         
         const room = {
@@ -63,14 +62,11 @@ class MultiplayerManager {
             createdAt: Date.now()
         };
 
-        console.log(`[CREATE] Saving room to API...`);
         await this.saveRoom(room, true); // Force create
         
         // Reload to ensure we have the server's version
-        console.log(`[CREATE] Reloading room from server...`);
         const savedRoom = await this.loadRoom(roomCode);
         this.currentRoom = savedRoom || room;
-        console.log(`[CREATE] Room created successfully:`, this.currentRoom);
         
         this.startPolling();
         
@@ -78,12 +74,10 @@ class MultiplayerManager {
     }
 
     async joinRoom(roomCode, playerName) {
-        console.log(`[JOIN] Attempting to join room ${roomCode} as ${playerName}`);
         const room = await this.loadRoom(roomCode);
         
-        console.log(`[JOIN] Room loaded:`, room);
         if (!room) {
-            console.error(`[JOIN] ERROR: Room ${roomCode} not found!`);
+            console.error(`❌ Room ${roomCode} not found`);
             throw new Error('Room not found');
         }
         
@@ -112,6 +106,7 @@ class MultiplayerManager {
             // Reload room to get the saved state
             const updatedRoom = await this.loadRoom(roomCode);
             this.currentRoom = updatedRoom || room;
+            console.log(`✅ Joined room ${roomCode} as ${playerName}`);
         } else {
             this.currentRoom = room;
         }
@@ -200,9 +195,7 @@ class MultiplayerManager {
 
     // Storage methods - API first, localStorage fallback
     async saveRoom(room, forceCreate = false) {
-        console.log(`[SAVE] Saving room ${room.code}, forceCreate: ${forceCreate}, players: ${room.players?.length}`);
         if (this.useLocalStorage) {
-            console.log(`[SAVE] Using localStorage mode`);
             return this.saveRoomLocal(room);
         }
 
@@ -210,28 +203,20 @@ class MultiplayerManager {
             // Determine action - if forceCreate or this is a new room, use 'create'
             let action = 'update';
             if (forceCreate) {
-                console.log(`[SAVE] Forcing create mode`);
                 action = 'create';
             } else {
                 // Check if room exists in API
                 try {
                     const checkUrl = `${this.apiUrl}?code=${room.code}`;
-                    console.log(`[SAVE] Checking if room exists: ${checkUrl}`);
                     const checkResponse = await fetch(checkUrl);
-                    console.log(`[SAVE] Check status: ${checkResponse.status}`);
                     if (checkResponse.status === 404) {
-                        console.log(`[SAVE] Room doesn't exist, will create`);
                         action = 'create';
-                    } else {
-                        console.log(`[SAVE] Room exists, will update`);
                     }
                 } catch (e) {
-                    console.log(`[SAVE] Check failed, assuming create:`, e);
                     action = 'create'; // If check fails, assume it doesn't exist
                 }
             }
 
-            console.log(`[SAVE] Sending ${action} request to API`);
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -242,15 +227,16 @@ class MultiplayerManager {
                 })
             });
 
-            console.log(`[SAVE] API response status: ${response.status}`);
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error('[SAVE] API error:', errorData);
+                console.error('[ERROR] Save failed:', errorData);
                 throw new Error(errorData.error || 'Failed to save room');
             }
             
             const saveResult = await response.json();
-            console.log(`[SAVE] Successfully saved:`, saveResult);
+            if (action === 'create') {
+                console.log(`✅ Room ${room.code} created with ${room.players?.length} players`);
+            }
 
             const data = await response.json();
             
@@ -279,31 +265,26 @@ class MultiplayerManager {
     }
 
     async loadRoom(roomCode) {
-        console.log(`[LOAD] Loading room ${roomCode}...`);
         if (this.useLocalStorage) {
-            console.log(`[LOAD] Using localStorage mode`);
             return this.loadRoomLocal(roomCode);
         }
 
         try {
             const url = `${this.apiUrl}?code=${roomCode}`;
-            console.log(`[LOAD] Fetching from: ${url}`);
             const response = await fetch(url);
             
-            console.log(`[LOAD] Response status: ${response.status}`);
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.log(`[LOAD] Room not found in API`);
+                    console.error(`[ERROR] Room ${roomCode} not found`);
                     return null;
                 }
                 throw new Error('Failed to load room');
             }
 
             const data = await response.json();
-            console.log(`[LOAD] Room loaded successfully:`, data.room);
             return data.room;
         } catch (error) {
-            console.error('[LOAD] API load failed, falling back to localStorage:', error);
+            console.error('[ERROR] API load failed, falling back to localStorage:', error);
             this.useLocalStorage = true;
             return this.loadRoomLocal(roomCode);
         }
@@ -368,10 +349,6 @@ class MultiplayerManager {
                     const oldRoomStr = JSON.stringify(this.currentRoom);
                     
                     if (newRoomStr !== oldRoomStr) {
-                        console.log('Room state changed, updating...', {
-                            oldPlayers: this.currentRoom.players?.map(p => ({name: p.name, roll: p.priorityRoll})),
-                            newPlayers: room.players?.map(p => ({name: p.name, roll: p.priorityRoll}))
-                        });
                         this.currentRoom = room;
                         this.lastKnownState = JSON.stringify(room.gameState);
                         if (this.onRoomUpdate) {
