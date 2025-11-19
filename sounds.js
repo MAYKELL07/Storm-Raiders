@@ -54,10 +54,12 @@ class SoundManager {
             if (sound) {
                 sound.volume = this.volume * volumeMultiplier;
                 sound.currentTime = 0;
-                sound.play().catch(e => console.warn('Audio play failed:', e));
+                sound.play().catch(e => {
+                    // Silently fail - sounds are not critical
+                });
             }
         } catch (e) {
-            console.warn('Sound playback error:', e);
+            // Silently fail - sounds are not critical
         }
     }
 

@@ -220,9 +220,11 @@ function syncGameState(gameState) {
     if (gameState.currentPhase === 'priority') {
         // Check if all players have rolled
         const allRolled = gameEngine.players.every(p => p.priorityRoll > 0);
+        console.log(`[SYNC] Priority phase: ${gameEngine.players.filter(p => p.priorityRoll > 0).length}/${gameEngine.players.length} rolled`);
         
         if (allRolled && gameEngine.turnOrder.length === 0) {
             // All rolled but turn order not set - determine it now
+            console.log('[SYNC] All rolled, determining turn order...');
             gameEngine.determineTurnOrder();
             multiplayerManager.updateGameState(gameEngine.getGameState());
             updateGameScreen();
@@ -232,7 +234,10 @@ function syncGameState(gameState) {
             const currentPlayerData = gameEngine.players.find(p => p.id === currentPlayerId);
             if (currentPlayerData && currentPlayerData.priorityRoll === 0) {
                 // We haven't rolled yet, show the modal
+                console.log('[SYNC] This player needs to roll');
                 startPriorityPhase();
+            } else {
+                console.log('[SYNC] Waiting for other players...');
             }
         }
     }
@@ -262,12 +267,15 @@ function startPriorityPhase() {
     // Show dice roll modal for current player
     setTimeout(() => {
         uiManager.showDiceModal(async (result) => {
+            console.log(`🎲 Rolled ${result.total} for priority`);
+            
             // Save state immediately
             await multiplayerManager.updateGameState(gameEngine.getGameState());
             updateGameScreen(); // Update to show new roll count
             
             // Check if all players rolled
             const allRolled = gameEngine.players.every(p => p.priorityRoll > 0);
+            console.log(`Players rolled: ${gameEngine.players.filter(p => p.priorityRoll > 0).length}/${gameEngine.players.length}`);
             
             if (allRolled) {
                 uiManager.showNotification('✅ All players rolled! Starting game...', 2000);
