@@ -167,11 +167,23 @@ class MultiplayerManager {
     async updateGameState(gameState) {
         if (!this.currentRoom) return;
 
-        // Load latest room state to avoid overwriting other players' data
+        // Load latest room state to get other players' data
         const latestRoom = await this.loadRoom(this.currentRoom.code);
         if (!latestRoom) {
             console.error('[ERROR] Could not load room for state update');
             return;
+        }
+
+        // Merge game states - preserve data from both
+        if (latestRoom.gameState && latestRoom.gameState.players && gameState.players) {
+            // Merge player data - keep the highest priorityRoll for each player
+            gameState.players.forEach((player, index) => {
+                const latestPlayer = latestRoom.gameState.players[index];
+                if (latestPlayer && latestPlayer.priorityRoll > 0 && player.priorityRoll === 0) {
+                    // Latest room has a roll we don't have - use it
+                    player.priorityRoll = latestPlayer.priorityRoll;
+                }
+            });
         }
 
         // Update game state and timestamp
@@ -185,7 +197,9 @@ class MultiplayerManager {
         this.currentRoom = latestRoom;
         this.lastKnownState = JSON.stringify(gameState);
         
-        console.log(`💾 Game state saved`);
+        console.log(`💾 Game state saved`, {
+            rolls: gameState.players?.map(p => ({name: p.name, roll: p.priorityRoll}))
+        });
     }
 
     async getGameState() {

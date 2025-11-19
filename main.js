@@ -269,14 +269,7 @@ function startPriorityPhase() {
         uiManager.showDiceModal(async (result) => {
             console.log(`🎲 Rolled ${result.total} for priority`);
             
-            // Get the latest room state first to preserve other players' rolls
-            const latestRoom = await multiplayerManager.getRoom();
-            if (latestRoom && latestRoom.gameState) {
-                // Sync to latest state first
-                syncGameState(latestRoom.gameState);
-            }
-            
-            // Now save with all players' data
+            // Save state immediately (don't sync first - you just rolled!)
             await multiplayerManager.updateGameState(gameEngine.getGameState());
             updateGameScreen(); // Update to show new roll count
             
