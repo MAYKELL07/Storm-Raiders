@@ -208,10 +208,10 @@ class MultiplayerManager {
 
     // Storage methods - API first, localStorage fallback
     async saveRoom(room, forceCreate = false) {
-        if (this.useLocalStorage) {
-            return this.saveRoomLocal(room);
-        }
-
+        // Always save to localStorage first for reliability
+        this.saveRoomLocal(room);
+        
+        // Try to sync to API but don't fail if it's down
         try {
             // Determine action - if forceCreate or this is a new room, use 'create'
             let action = 'update';
@@ -242,8 +242,8 @@ class MultiplayerManager {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error('[ERROR] Save failed:', errorData);
-                throw new Error(errorData.error || 'Failed to save room');
+                console.warn('[WARN] API save failed, using localStorage:', errorData.error);
+                return room; // Return the locally saved room
             }
             
             const data = await response.json();
@@ -269,36 +269,37 @@ class MultiplayerManager {
 
             return data.room;
         } catch (error) {
-            console.error('[ERROR] API save failed, falling back to localStorage:', error);
-            this.useLocalStorage = true;
-            return this.saveRoomLocal(room);
+            console.warn('[WARN] API not available, using localStorage only:', error.message);
+            return room; // Return the locally saved room
         }
     }
 
     async loadRoom(roomCode) {
-        if (this.useLocalStorage) {
-            return this.loadRoomLocal(roomCode);
-        }
-
+        // Try localStorage first
+        const localRoom = this.loadRoomLocal(roomCode);
+        
+        // Try to get from API for cross-device sync
         try {
             const url = `${this.apiUrl}?code=${roomCode}`;
             const response = await fetch(url);
             
-            if (!response.ok) {
-                if (response.status === 404) {
-                    console.error(`[ERROR] Room ${roomCode} not found`);
-                    return null;
+            if (response.ok) {
+                const data = await response.json();
+                // Merge API data with local data (API is source of truth for active rooms)
+                if (data.room) {
+                    this.saveRoomLocal(data.room); // Update localStorage
+                    return data.room;
                 }
-                throw new Error('Failed to load room');
             }
-
-            const data = await response.json();
-            return data.room;
         } catch (error) {
-            console.error('[ERROR] API load failed, falling back to localStorage:', error);
-            this.useLocalStorage = true;
-            return this.loadRoomLocal(roomCode);
+            // API failed, use localStorage
         }
+        
+        // Return localStorage version if API fails or room not found
+        if (!localRoom) {
+            console.error(`[ERROR] Room ${roomCode} not found`);
+        }
+        return localRoom;
     }
 
     async deleteRoom(roomCode) {
