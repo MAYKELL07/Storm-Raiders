@@ -220,12 +220,12 @@ class MultiplayerManager {
         latestRoom.gameState = gameState;
         latestRoom.lastUpdate = Date.now();
         
-        // Save to API
-        await this.saveRoom(latestRoom);
-        
-        // Update local reference
+        // Update local reference FIRST so polling doesn't overwrite with stale data
         this.currentRoom = latestRoom;
         this.lastKnownState = JSON.stringify(gameState);
+        
+        // Save to API and localStorage
+        await this.saveRoom(latestRoom);
         
         console.log(`💾 Game state saved`, {
             rolls: gameState.players?.map(p => ({name: p.name, roll: p.priorityRoll}))
@@ -470,13 +470,13 @@ class MultiplayerManager {
             if (this.currentRoom) {
                 const room = await this.loadRoom(this.currentRoom.code);
                 if (room) {
-                    // Check if anything changed (room data or game state)
-                    const newRoomStr = JSON.stringify(room);
-                    const oldRoomStr = JSON.stringify(this.currentRoom);
+                    // Check if the game state actually changed (not just timestamp)
+                    const newStateStr = JSON.stringify(room.gameState);
+                    const oldStateStr = this.lastKnownState;
                     
-                    if (newRoomStr !== oldRoomStr) {
+                    if (newStateStr !== oldStateStr) {
                         this.currentRoom = room;
-                        this.lastKnownState = JSON.stringify(room.gameState);
+                        this.lastKnownState = newStateStr;
                         if (this.onRoomUpdate) {
                             this.onRoomUpdate(room);
                         }
