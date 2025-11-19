@@ -339,13 +339,19 @@ class MultiplayerManager {
                     const oldRoomStr = JSON.stringify(this.currentRoom);
                     
                     if (newRoomStr !== oldRoomStr) {
+                        console.log('Room state changed, updating...', {
+                            oldPlayers: this.currentRoom.players?.map(p => ({name: p.name, roll: p.priorityRoll})),
+                            newPlayers: room.players?.map(p => ({name: p.name, roll: p.priorityRoll}))
+                        });
                         this.currentRoom = room;
                         this.lastKnownState = JSON.stringify(room.gameState);
-                        this.onRoomUpdate(room);
+                        if (this.onRoomUpdate) {
+                            this.onRoomUpdate(room);
+                        }
                     }
                 }
             }
-        }, 500); // Check every 500ms for faster updates
+        }, 300); // Check every 300ms for real-time feel
     }
 
     stopPolling() {

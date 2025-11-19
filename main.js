@@ -213,26 +213,27 @@ function syncGameState(gameState) {
     gameEngine.currentEvent = gameState.currentEvent || null;
     gameEngine.gameLog = gameState.gameLog || [];
 
-    // Update UI
+    // Update UI immediately to reflect new state
     updateGameScreen();
 
     // Check current phase and handle accordingly
-    if (gameState.currentPhase === 'priority' && !gameState.priorityRolled) {
-        // Check if we need to roll
-        const currentPlayerData = gameEngine.players.find(p => p.id === currentPlayerId);
-        if (currentPlayerData && currentPlayerData.priorityRoll === 0) {
-            // We haven't rolled yet, show the modal
-            startPriorityPhase();
-        }
-        
+    if (gameState.currentPhase === 'priority') {
         // Check if all players have rolled
         const allRolled = gameEngine.players.every(p => p.priorityRoll > 0);
+        
         if (allRolled && gameEngine.turnOrder.length === 0) {
-            // Determine turn order if not already done
+            // All rolled but turn order not set - determine it now
             gameEngine.determineTurnOrder();
             multiplayerManager.updateGameState(gameEngine.getGameState());
             updateGameScreen();
             checkPlayerTurn();
+        } else if (!allRolled) {
+            // Not all rolled yet - check if THIS player needs to roll
+            const currentPlayerData = gameEngine.players.find(p => p.id === currentPlayerId);
+            if (currentPlayerData && currentPlayerData.priorityRoll === 0) {
+                // We haven't rolled yet, show the modal
+                startPriorityPhase();
+            }
         }
     }
 
@@ -260,9 +261,9 @@ function startPriorityPhase() {
     
     // Show dice roll modal for current player
     setTimeout(() => {
-        uiManager.showDiceModal((result) => {
-            // Save state
-            multiplayerManager.updateGameState(gameEngine.getGameState());
+        uiManager.showDiceModal(async (result) => {
+            // Save state immediately
+            await multiplayerManager.updateGameState(gameEngine.getGameState());
             updateGameScreen(); // Update to show new roll count
             
             // Check if all players rolled
@@ -271,9 +272,9 @@ function startPriorityPhase() {
             if (allRolled) {
                 uiManager.showNotification('✅ All players rolled! Starting game...', 2000);
                 // Determine turn order
-                setTimeout(() => {
+                setTimeout(async () => {
                     gameEngine.determineTurnOrder();
-                    multiplayerManager.updateGameState(gameEngine.getGameState());
+                    await multiplayerManager.updateGameState(gameEngine.getGameState());
                     updateGameScreen();
                     
                     // Start first player's turn
