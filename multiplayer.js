@@ -167,13 +167,24 @@ class MultiplayerManager {
     async updateGameState(gameState) {
         if (!this.currentRoom) return;
 
-        // Update local room state immediately
-        this.currentRoom.gameState = gameState;
-        this.currentRoom.lastUpdate = Date.now();
-        this.lastKnownState = JSON.stringify(gameState);
+        // Load latest room state to avoid overwriting other players' data
+        const latestRoom = await this.loadRoom(this.currentRoom.code);
+        if (!latestRoom) {
+            console.error('[ERROR] Could not load room for state update');
+            return;
+        }
+
+        // Update game state and timestamp
+        latestRoom.gameState = gameState;
+        latestRoom.lastUpdate = Date.now();
         
         // Save to API
-        await this.saveRoom(this.currentRoom);
+        await this.saveRoom(latestRoom);
+        
+        // Update local reference
+        this.currentRoom = latestRoom;
+        this.lastKnownState = JSON.stringify(gameState);
+        
         console.log(`💾 Game state saved`);
     }
 
