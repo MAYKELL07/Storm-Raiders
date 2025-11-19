@@ -167,12 +167,14 @@ class MultiplayerManager {
     async updateGameState(gameState) {
         if (!this.currentRoom) return;
 
-        const room = await this.loadRoom(this.currentRoom.code);
-        if (!room) return;
-
-        room.gameState = gameState;
-        room.lastUpdate = Date.now();
-        await this.saveRoom(room);
+        // Update local room state immediately
+        this.currentRoom.gameState = gameState;
+        this.currentRoom.lastUpdate = Date.now();
+        this.lastKnownState = JSON.stringify(gameState);
+        
+        // Save to API
+        await this.saveRoom(this.currentRoom);
+        console.log(`💾 Game state saved`);
     }
 
     async getGameState() {
@@ -233,12 +235,10 @@ class MultiplayerManager {
                 throw new Error(errorData.error || 'Failed to save room');
             }
             
-            const saveResult = await response.json();
+            const data = await response.json();
             if (action === 'create') {
                 console.log(`✅ Room ${room.code} created with ${room.players?.length} players`);
             }
-
-            const data = await response.json();
             
             // Force immediate update check for better sync
             setTimeout(() => {
@@ -258,7 +258,7 @@ class MultiplayerManager {
 
             return data.room;
         } catch (error) {
-            console.error('API save failed, falling back to localStorage:', error);
+            console.error('[ERROR] API save failed, falling back to localStorage:', error);
             this.useLocalStorage = true;
             return this.saveRoomLocal(room);
         }
