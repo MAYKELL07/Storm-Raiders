@@ -34,7 +34,7 @@ async function createRoom() {
                 initializeGameFromRoom(room);
             } else if (room.status === 'playing' && gameEngine) {
                 // Update game state
-                syncGameState(room.gameState);
+                syncGameState(room.game_state || room.gameState);
             }
         };
         
@@ -72,7 +72,7 @@ async function joinRoom() {
                 initializeGameFromRoom(room);
             } else if (room.status === 'playing' && gameEngine) {
                 // Update game state
-                syncGameState(room.gameState);
+                syncGameState(room.game_state || room.gameState);
             }
         };
         
@@ -101,7 +101,7 @@ async function updateLobbyScreen() {
 
     document.getElementById('lobbyRoomCode').textContent = room.code;
     document.getElementById('lobbyPlayerCount').textContent = 
-        `${room.players.length}/${room.maxPlayers}`;
+        `${room.players.length}/${room.max_players || room.maxPlayers}`;
 
     const playerList = document.getElementById('playerList');
     playerList.innerHTML = '';
@@ -165,13 +165,13 @@ async function startGame() {
 }
 
 function initializeGameFromRoom(room) {
-    if (!room.gameState) return;
+    const gs = room.game_state || room.gameState;
+    if (!gs) return;
 
     // Initialize game engine with state
     gameEngine = new GameEngine();
     
     // Manually copy properties to preserve GameEngine class methods
-    const gs = room.gameState;
     gameEngine.players = gs.players || [];
     gameEngine.currentRound = gs.currentRound || 1;
     gameEngine.currentPhase = gs.currentPhase || 'priority';
