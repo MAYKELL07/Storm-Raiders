@@ -25,13 +25,7 @@ async function createRoom() {
     }
 
     try {
-        const roomCode = await multiplayerManager.createRoom(playerName, maxPlayers);
-        console.log('Room created:', roomCode);
-        
-        showScreen('lobbyScreen');
-        updateLobbyScreen();
-        
-        // Set up room update polling
+        // Set up room update polling BEFORE creating room
         multiplayerManager.onRoomUpdate = (room) => {
             updateLobbyScreen();
             
@@ -43,6 +37,12 @@ async function createRoom() {
                 syncGameState(room.gameState);
             }
         };
+        
+        const roomCode = await multiplayerManager.createRoom(playerName, maxPlayers);
+        console.log('Room created:', roomCode);
+        
+        showScreen('lobbyScreen');
+        await updateLobbyScreen();
     } catch (error) {
         alert('Error creating room: ' + error.message);
     }
@@ -63,13 +63,7 @@ async function joinRoom() {
     }
 
     try {
-        await multiplayerManager.joinRoom(roomCode, playerName);
-        console.log('Joined room:', roomCode);
-        
-        showScreen('lobbyScreen');
-        updateLobbyScreen();
-        
-        // Set up room update polling
+        // Set up room update polling BEFORE joining
         multiplayerManager.onRoomUpdate = (room) => {
             updateLobbyScreen();
             
@@ -81,6 +75,12 @@ async function joinRoom() {
                 syncGameState(room.gameState);
             }
         };
+        
+        await multiplayerManager.joinRoom(roomCode, playerName);
+        console.log('Joined room:', roomCode);
+        
+        showScreen('lobbyScreen');
+        await updateLobbyScreen();
     } catch (error) {
         alert('Error joining room: ' + error.message);
     }
